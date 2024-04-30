@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang = "en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cool Pool Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+        .textArea {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        svg{
+           
+        }
+        cueLine{
+          position: absolute;
+          border-top: 1px solid rgb(0, 0, 0);
+          width: 5px;
+          z-index: 5;
+        }
+    </style>
+
+    <script>
+      var newGame = true;
+      var track = false;
+      var shotEnabled = false;
+      var player1Name;
+      var player2Name;
+      var playerIndex = 1;
+      var gameName;
+      var gameCounter = 0;
+      var game;
+      var table;
+      var svg;
+      var cueX = 350;
+      var cueY = 1025;
+      var mouseX;
+      var mouseY;
+      function startGame(){
+        gameCounter++;
+        if(newGame){
+          newGame = false;
+          track = true;
+          <!--alert( "Have Fun!!!" );-->
+
+          player1Name = document.getElementById("player1_name").value;
+          player2Name = document.getElementById("player2_name").value;
+          gameName = 'fungame'+gameCounter;
+
+          const args = {
+            param1: gameName,
+            param2: player1Name,
+            param3: player2Name
+          }
+
+          var myTuple;
+          fetch('/start.html',{method: 'POST',headers: {'Content-type': 'application/json'},body: JSON.stringify(args)}).then(response => {return response.json();}).then(data => {
+            myTuple = data.result;
+            svg = myTuple[0];
+            table = myTuple[1];
+            document.getElementById('svg_container').innerHTML = svg;})
+            
+          player1Turn();
+          shotEnabled = true;
+        }
+        
+      } 
+      function player1Turn(){
+        document.getElementById('player1_name').value = player1Name+'\'s turn (balls 1-7)';
+        document.getElementById('player2_name').value = ' ';
+      }
+      function player2Turn(){
+        document.getElementById('player1_name').value = ' ';
+        document.getElementById('player2_name').value = player2Name+'\'s turn (balls 9-15)';
+      }
+      function straightshot(){
+        if(shotEnabled){
+          shotEnabled = false;
+
+          
+          var xVel =0
+          var yVel = -1000;
+
+          //var xVel = 500;
+          //var yVel = -1000;
+
+          var playerName;
+          if(playerIndex==1){
+            playerName = player1Name;
+          }else{
+            playerName = player2Name;
+          }
+
+          const args = {
+            param1: player1Name,
+            param2: table,
+            param3: gameName,
+            param4: playerName,
+            param5: xVel,
+            param6: yVel
+          }
+
+          var myTuple;
+          var bonusTurn;
+          var winner;
+          var svgs;
+          fetch('/shoot.html',{method: 'POST',headers: {'Content-type': 'application/json'},body: JSON.stringify(args)}).then(response => {return response.json();}).then(data => {
+            myTuple = data.result;
+            svgs = myTuple[0];
+            bonusTurn = myTuple[1];
+            winner = myTuple[2];
+            table = myTuple[3];
+            var cuePos = myTuple[4];
+            cueX = cuePos[0];
+            cueY = cuePos[1];
+            display(svgs);
+
+            if(winner == 0){
+              loser();
+            }else if(winner == 2){
+              winner();
+            }
+
+            if(bonusTurn == 0){
+              if(playerIndex==1){
+                playerIndex = 2;
+              }else{
+                playerIndex = 1;
+              }
+            }
+          
+            if(playerIndex == 1){
+              player1Turn();
+            }else{
+              player2Turn();
+            }
+          
+            shotEnabled = (!shotEnabled);})
+        }
+      }
+      function shot(){
+        if(shotEnabled){
+          shotEnabled = false;
+
+          var svgRect = document.getElementById('svg_container').getBoundingClientRect();
+          var svgMouseX = (mouseX - svgRect.left) /svgRect.width * 1400;
+          var svgMouseY = (mouseY - svgRect.top) /svgRect.height * 2750;
+
+          //console.log(svgMouseX,svgMouseY);
+
+          var angle = Math.atan2(svgMouseY-cueY,svgMouseX-cueX);
+          var distance = Math.sqrt(Math.pow(svgMouseX-cueX,2)+Math.pow(svgMouseY-cueY,2));
+          var maxVel = 1000;
+          var normalDis = Math.min((distance)/maxVel,1);
+          var xVel = -normalDis * maxVel * Math.cos(angle);
+          var yVel = -normalDis * maxVel * Math.sin(angle);
+          //console.log(xVel);
+          //console.log(yVel);
+          //console.log(cueY);
+          //console.log(cueX);
+          //console.log(svgMouseY);
+          //console.log(svgMouseX);
+
+          //var xVel = 500;
+          //var yVel = -1000;
+
+          var playerName;
+          if(playerIndex==1){
+            playerName = player1Name;
+          }else{
+            playerName = player2Name;
+          }
+
+          const args = {
+            param1: player1Name,
+            param2: table,
+            param3: gameName,
+            param4: playerName,
+            param5: xVel,
+            param6: yVel
+          }
+
+          var myTuple;
+          var bonusTurn;
+          var winner;
+          var svgs;
+          fetch('/shoot.html',{method: 'POST',headers: {'Content-type': 'application/json'},body: JSON.stringify(args)}).then(response => {return response.json();}).then(data => {
+            myTuple = data.result;
+            svgs = myTuple[0];
+            bonusTurn = myTuple[1];
+            winner = myTuple[2];
+            table = myTuple[3];
+            var cuePos = myTuple[4];
+            cueX = cuePos[0];
+            cueY = cuePos[1];
+            display(svgs);
+
+            if(winner == 0){
+              loser();
+            }else if(winner == 2){
+              winner();
+            }
+
+            if(bonusTurn == 0){
+              if(playerIndex==1){
+                playerIndex = 2;
+              }else{
+                playerIndex = 1;
+              }
+            }
+          
+            if(playerIndex == 1){
+              player1Turn();
+            }else{
+              player2Turn();
+            }
+          
+            shotEnabled = (!shotEnabled);})
+        }
+      }
+      function delay(ms){
+        return new Promise(resolve => setTimeout(resolve,ms));
+      }
+      async function display(svgStrings){
+        var counter = 0;
+        svgs = svgStrings.split('~');
+        while(counter < svgs.length){
+          document.getElementById('svg_container').innerHTML = svgs[counter];
+          counter++;
+          await delay(100);
+        }
+      }
+      
+      function winner(){
+        if(playerIndex == 1){
+          document.getElementById('player1_name').value = 'WINNER!!!';
+          document.getElementById('player2_name').value = 'Nice Try:)';
+        }else{
+          document.getElementById('player1_name').value = 'Nice Try:)';
+          document.getElementById('player2_name').value = 'WINNER!!!';
+        }
+        newGame = true;
+        shotEnabled = true;
+      }
+      function loser(){
+        if(playerIndex == 1){
+          document.getElementById('player1_name').value = 'Sorry you sunk the 8 ball too early :(';
+          document.getElementById('player2_name').value = 'WINNER!!!';
+        }else{
+          document.getElementById('player1_name').value = 'WINNER!!!';
+          document.getElementById('player2_name').value = 'Sorry you sunk the 8 ball too early :(';
+        }
+        newGame = true;
+        shotEnabled = true;
+      }
+
+      function updateCueLine(){
+        //cueX = cueX + 14.25;
+        //cueY = cueY + 14.25;
+
+        var angle = Math.atan2(mouseY-cueY,mouseX-cueX);
+        var distance = Math.sqrt(Math.pow(mouseX-cueX,2)+Math.pow(mouseY-cueY,2))
+
+        var cueLine = document.getElementById('cueLine');
+        cueLine.style.left = cueX+"px";
+        cueLine.style.top = cueY+"px";
+        cueLine.style.transform = "rotate("+angle+"rad)"
+        cueLine.style.height = distance+"px";
+      }
+
+      document.addEventListener("mousemove",function(event){
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+        //updateCueLine()
+      });
+
+    </script>
+  </head>
+  <body>
+    <h1>Cool Pool Game</h1>
+    <div class="container">
+            <div class="textArea">
+                <label for="player1_name">Player 1 Name:</label>
+                <input type="text" id="player1_name" name="player1_name" required>
+            </div>
+            <div class="textArea">
+                <label for="player2_name">Player 2 Name:</label>
+                <input type="text" id="player2_name" name="player2_name" required>
+            </div>
+            <div class="textArea">
+                <input type="submit" onclick="startGame();" value="Play">
+            </div>
+            <!--<div class="textArea">
+              <input type="submit" onclick="straightshot();" value="Shoot">
+          </div>-->
+    </div>
+    
+    
+      <div>
+        <h3>How to Play:</h3>
+        <p>-Enter names and press play button
+           <br>-Click with the mouse to shoot your assigned balls into the holes
+           <br>-Only sink the 8 ball once all your balls are already sunk
+        </p>
+      </div>
+
+      <div id = "svg_container" class = svg onclick="shot();">
+
+    </div>
+    <div id="cueLine" class = cueLine>
+
+    
+    </div>
+    
+
+  </body>
+</html>
