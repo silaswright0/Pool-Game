@@ -10,9 +10,10 @@ Development tools: Used Python,C,SQL,HTML,CSS, and Javascript with Visual Studio
 Timeline: January 2024- April 2024
 
 Usage:  1: Download source files
-        2: make command in terminal to compile C code
-        3: enter, export LD_LIBRARY_PATH=`pwd` ,into terminal
-        4: run the server with python3 server.py
-        5: open http://localhost:57810/poolgame in a browser and play 
+        2: Enter linux enviroment
+        3: make command in terminal to compile C code
+        4: enter, export LD_LIBRARY_PATH=`pwd` ,into terminal
+        5: run the server with python3 server.py
+        6: open http://localhost:57810/poolgame in a browser and play 
 
 Contact: email- siwright007@icloud.com phone- 226-501-5805
